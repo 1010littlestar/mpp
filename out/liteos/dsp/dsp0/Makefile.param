@@ -1,0 +1,76 @@
+# Makefile.param 
+# Only global variable should be defined here.
+# All the variables must be used as "export" and "?=".
+# Otherwise, there will be some errors, when Makefile.param is nested.
+
+# Use this file as the following sample
+# ifeq ($(PARAMFILE), )
+#     PARAMFILE:=../Makefile.param
+#     include $(PARAMFILE)
+# endif
+
+
+# Get the local DSP_ROOT path by PARAM_FILE.
+# PARAM_FILE is configed at Makefile before include this file
+export PARAMFILE
+export DSP_PATH?=$(shell cd $(shell pwd)/`dirname $(PARAMFILE)`; pwd)
+
+##############################################################################
+export KERNEL_NAME=liteos
+# Allocated the OS position
+export OS_ROOT?=$(DSP_PATH)/liteos/$(KERNEL_NAME)
+##############################################################################
+export LITEOSTOPDIR=$(OS_ROOT)
+export DSP_XTENSA_COMPILE?=/opt/xtensa/XtDevTools/install/tools/RG-2016.4-linux/XtensaTools/bin
+include $(LITEOSTOPDIR)/config.mk
+
+# export global variables
+
+export DSP_CORE?=VP60_1124
+export DSP_ID?=0
+export FPGA?=n
+export CPU_TYPE?=multi-core
+export XTENSA_ELF_CORE_VER?=RG-2016.4-linux
+export DSP_XTENSA_SYSTEM?=/opt/xtensa/XtDevTools/XtensaRegistry/RG-2016.4-linux
+
+export CC
+export AS
+export AR
+export LD
+export GPP
+export OBJCOPY
+export OBJDUMP
+export DUMPELF
+
+RM = -rm -rf
+export RM
+
+CFLAGS := -fno-builtin -nostdlib
+CFLAGS += $(LITEOS_CFLAGS)
+CFLAGS += -D__IGNORE_HWSEC__
+CFLAGS += -DDSP_ID=$(DSP_ID)
+#we only debug in single,in fpga
+ifeq ($(CONFIG_HI_ARCH), hi3559av100)
+ifeq ($(FPGA),n)
+ifeq ($(CPU_TYPE),single)
+CFLAGS += -DSINGLE
+else
+CFLAGS += -DBIG_LITTLE
+endif
+else
+CFLAGS += -DSINGLE
+endif
+else
+ifeq ($(CONFIG_ARM_ARCH_TYPE),smp)
+CFLAGS += -DSMP
+else
+CFLAGS += -DAMP
+endif
+endif
+
+KERNEL_LIBS := $(LITEOS_LIBS)
+LDFLAGS := $(LITEOS_LDFLAGS)
+export CFLAGS
+export KERNEL_LIBS
+export LDFLAGS
+

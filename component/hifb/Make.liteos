@@ -1,0 +1,70 @@
+#*******************************************************************************
+#The rule of make HuaweiLite module
+#*******************************************************************************
+
+CFLAGS += $(EXTRA_CFLAGS)
+
+OBJS = $(patsubst %.c,%.o,$(HIFB_SRC))
+LIB = lib$(HIFB_MOD_NAME).a
+
+ifeq ($(HIARCH),hi3516ev200)
+	TDE_ROOT    := tde/tde_hi3516ev200
+	VGS_ROOT    := vgs/vgs_hi3516ev200
+else
+        TDE_ROOT    := tde/tde
+endif
+.PHONY: default clean
+default:copy $(OBJS) $(LIB)
+
+	@echo -e "\e[0;32;1m--Compiling 'hiFB'... Configs as follow:\e[0;36;1m"
+	@echo ---- CROSS=$(CROSS)
+	@echo ---- HIARCH=$(HIARCH), HICHIP=$(HICHIP), CVER=$(CVER), DBG=$(HIDBG)
+	@echo ---- SDK_PATH=$(SDK_PATH) , PARAM_FILE=$(PARAM_FILE)
+	@echo ---- LINUX_ROOT=$(LINUX_ROOT)
+	@@echo -e "\e[0m"
+	@mkdir -p $(REL_KO) && cp -rf *.a $(REL_KO)
+	@mkdir -p $(REL_INC) && cp $(PWD)/include/$(HIFB_HEADER) $(REL_INC)
+
+
+copy:
+ifeq ($(MPP_BUILD), y)
+	@-pushd $(MPP_PATH)/component/hifb/include        > /dev/null; rm -f $(BASE_MKP_HEADER);                 popd > /dev/null
+	@-pushd $(MPP_PATH)/component/hifb/include        > /dev/null; rm -f $(SYS_EXT_HEADER);                  popd > /dev/null
+	@-pushd $(MPP_PATH)/component/hifb/include        > /dev/null; rm -f $(TDE_EXT_HEADER);                  popd > /dev/null
+	@-pushd $(MPP_PATH)/component/hifb/include        > /dev/null; rm -f $(TDE_MKP_HEADER);                  popd > /dev/null
+	@-pushd $(MPP_PATH)/component/hifb/include        > /dev/null; rm -f $(OSAL_HEADER);                     popd > /dev/null
+	@-pushd $(MPP_PATH)/component/hifb/include        > /dev/null; rm -f $(COMM_HEADER);                     popd > /dev/null
+	@-pushd $(MPP_PATH)/component/hifb/include        > /dev/null; rm -f $(SYS_HEADER);                      popd > /dev/null
+	@-pushd $(MPP_PATH)/component/hifb/include        > /dev/null; rm -f $(INIT_HEADER);                     popd > /dev/null
+	@-pushd $(MPP_PATH)/cbb/base/ext_inc                      > /dev/null; cp $(BASE_MKP_HEADER) $(INC_DIR); popd > /dev/null
+	@-pushd $(MPP_PATH)/cbb/sys/ext_inc                       > /dev/null; cp $(SYS_EXT_HEADER)  $(INC_DIR); popd > /dev/null
+	@-pushd $(MPP_PATH)/component/$(TDE_ROOT)/driver/include  > /dev/null; cp $(TDE_EXT_HEADER)  $(INC_DIR); popd > /dev/null
+	@-pushd $(MPP_PATH)/component/$(TDE_ROOT)/include         > /dev/null; cp $(TDE_MKP_HEADER)  $(INC_DIR); popd > /dev/null
+	@-pushd $(SDK_PATH)/osal/include                          > /dev/null; cp $(OSAL_HEADER)     $(INC_DIR); popd > /dev/null
+	@-pushd $(MPP_PATH)/cbb/include/adapt                     > /dev/null; cp $(COMM_HEADER)     $(INC_DIR); popd > /dev/null
+	@-pushd $(MPP_PATH)/cbb/sys/include/adapt                 > /dev/null; cp $(SYS_HEADER)      $(INC_DIR); popd > /dev/null
+	@-pushd $(MPP_PATH)/cbb/init/include/liteos               > /dev/null; cp $(INIT_HEADER)     $(INC_DIR); popd > /dev/null
+ifeq ($(HIARCH),hi3516ev200)
+	@-pushd $(MPP_PATH)/component/hifb/include   > /dev/null; rm -f $(VB_EXT_HEADER);           popd > /dev/null
+	@-pushd $(MPP_PATH)/component/hifb/include   > /dev/null; rm -f $(VB_HEADER);               popd > /dev/null
+	@-pushd $(MPP_PATH)/component/hifb/include   > /dev/null; rm -f $(VGS_EXT_HEADER);          popd > /dev/null
+	@-pushd $(MPP_PATH)/component/hifb/include   > /dev/null; rm -f $(VGS_HEADER);              popd > /dev/null
+	@-pushd $(MPP_PATH)/cbb/base/ext_inc         > /dev/null; cp $(VB_EXT_HEADER)   $(INC_DIR); popd > /dev/null
+	@-pushd $(MPP_PATH)/cbb/base/include/adapt   > /dev/null; cp $(VB_HEADER)       $(INC_DIR); popd > /dev/null
+	@-pushd $(MPP_PATH)/cbb/$(VGS_ROOT)/ext_inc  > /dev/null; cp $(VGS_EXT_HEADER)  $(INC_DIR); popd > /dev/null
+	@-pushd $(MPP_PATH)/cbb/$(VGS_ROOT)/include/adapt > /dev/null; cp $(VGS_HEADER) $(INC_DIR); popd > /dev/null
+endif
+
+endif
+
+$(OBJS): %.o : %.c copy
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(LIB): copy $(OBJS)
+	@$(AR) $(ARFLAGS) $@ $(OBJS)
+
+clean:
+	@for x in `find . -name "*.o"`;do rm -rf $$x;done
+	@for x in `find . -name "*.a"`;do rm -rf $$x;done
+	@rm -rf $(REL_KO)/$(HIFB_MOD_NAME).a
+	@rm -rf $(REL_INC)/$(HIFB_MOD_NAME)*.h	

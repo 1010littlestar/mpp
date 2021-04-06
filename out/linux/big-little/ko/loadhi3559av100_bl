@@ -1,0 +1,106 @@
+#!/bin/sh
+# Useage: ./loadhi3559av100_bl [ -r|-i|-a ]
+#         -r : rmmod all modules
+#         -i : insmod all modules
+#    default : rmmod all moules and then insmod them
+# e.g: ./loadhi3559av100_bl -i
+
+
+####################Variables Definition##########################
+
+
+mmz_start=0x70000000;        # mmz start addr
+mmz_size=512M;               # 512M, mmz size
+
+##################################################################
+
+report_error()
+{
+	echo "******* Error: There's something wrong, please check! *****"
+	exit 1
+}
+
+
+insert_ko()
+{
+	# driver load
+	insmod hi_osal.ko anony=1 mmz_allocator=hisi mmz=anonymous,0,$mmz_start,$mmz_size map_mmz=0x90000000,2816M || report_error
+	insmod hi3559av100_base.ko
+	insmod hi3559av100_sys.ko	
+	insmod hi3559av100_dsp.ko
+	insmod hi3559av100_ive.ko
+	insmod hi3559av100_nnie.ko
+	insmod hi3559av100_photo.ko
+	insmod hi3559av100_tde.ko
+	insmod hifb.ko
+}
+
+remove_ko()
+{
+	rmmod hifb
+	rmmod hi3559av100_tde
+	rmmod hi3559av100_photo
+	rmmod hi3559av100_nnie
+	rmmod hi3559av100_ive
+	rmmod hi3559av100_dsp
+	rmmod hi3559av100_sys
+	rmmod hi3559av100_base
+	rmmod hi_osal
+}
+
+
+load_usage()
+{
+	echo "Usage:  ./loadhi3559av100_bl [-option]"
+	echo "options:"
+	echo "    -i                       insert modules"
+	echo "    -r                       remove modules"
+	echo "    -a                       remove modules first, then insert modules"
+	echo "    -h                       help information"
+	echo -e "for example: ./loadhi3559av100_bl -i\n"
+}
+
+
+######################parse arg###################################
+b_arg_insmod=0
+b_arg_remove=0
+
+for arg in $@
+do
+	case $arg in
+		"-i")
+			b_arg_insmod=1;
+			;;
+		"-r")
+			b_arg_remove=1;
+			;;
+		"-a")			
+			b_arg_insmod=1;
+			b_arg_remove=1;
+			;;
+		"-h")
+			load_usage;
+			;;
+
+	esac
+done
+#######################parse arg end########################
+
+
+#######################Action###############################
+
+if [ $# -lt 1 ]; then
+    load_usage;
+    exit 0;
+fi
+
+
+if [ $b_arg_remove -eq 1 ]; then
+	remove_ko;
+fi
+
+if [ $b_arg_insmod -eq 1 ]; then
+	insert_ko;
+fi
+
+

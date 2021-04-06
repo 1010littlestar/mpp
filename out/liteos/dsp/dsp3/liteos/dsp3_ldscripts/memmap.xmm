@@ -1,0 +1,78 @@
+//discription: memmap.xmm file
+//dram0_1: memory for system stack. dram0_2: memory for thread stack. dram0_3: memory for global variables or other thing, user can use this memory to store global variables or other thing.
+//dram0_0/dram1_0: memory for storing data of algorithm processing. IRAM0: user can use for some functions need high performance.
+
+VECBASE = 0x40000400  		//dynamic vector base address
+ENTRY = "_PostResetVector"
+
+PLACE SECTIONS(.PostResetVector.text) WITH_SECTION(.ResetVector.text)
+//PLACE SECTIONS(.MemoryExceptionVector.literal) WITH_SECTION(.MemoryExceptionVector.text)  //move .literal to .text segment
+
+//os_init_data
+//3M
+BEGIN SRAM_00
+0x42F08000: sysram: SRAM_00: 0x300000: writable ;
+ SRAM_00:C: 0x42F08000-0x43207fff: .os.hshell.data .os.jmptable.data .os.init.data .os.data .data .os.shared.data .os.shared.bss .os.init.bss .os.bss .bss;
+END SRAM_00
+
+//9M
+BEGIN SRAM_01
+0x43208000: sysram: SRAM_01: 0x900000: executable, writable ;
+ SRAM_01:C: 0x43208000-0x43B07fff: .os.data.icunit .os.shared.test.data .literal .text .os.kernel.literal .os.kernel.text .os.monitor.literal .os.monitor.text;
+END SRAM_01
+
+//1M
+BEGIN SRAM_02
+0x43B08000: sysram: SRAM_02: 0x100000: executable, writable ;
+ SRAM_02:C: 0x43B08000-0x43C07fff: .os.literal .os.text .os.minor.literal .os.minor.text .os.init.literal .os.init.text ;
+END SRAM_02
+
+//2M
+BEGIN SRAM_03
+0x43C08000: sysram : sram : 0x200000 : executable, writable ;
+ sram0 : C : 0x43C08000 - 0x43E07fff :  HEAP : .sram.rodata .rodata ;
+END SRAM_03
+
+//256KB
+BEGIN dram0
+0x15100000: dataRam : dram0 : 0x40000 : writable ;
+ dram0_1 : C : 0x15100000 - 0x15100fff : STACK :;
+ dram0_2 : C : 0x15104000 - 0x1510ffff : .dram0_2.rodata .dram0_2.literal .dram0_2.data .dram0_2.bss;
+ dram0_3 : C : 0x15101000 - 0x15103fff : .dram0_3.rodata .dram0_3.literal .dram0_3.data .dram0_3.bss;
+ dram0_0 : C : 0x15110000 - 0x1513ffff : .dram0.rodata .dram0.literal .dram0.data .dram0.bss;
+END dram0
+
+//192KB
+BEGIN dram1
+0x15210000: dataRam : dram1 : 0x30000 : writable ;
+ dram1_0 : C : 0x15210000 - 0x1523ffff : .dram1.rodata .dram1.literal .dram1.data .dram1.bss;
+END dram1
+
+//fixed verctor
+BEGIN fixvector
+0x40000000: instRam : fixvector : 0x300 : executable, writable ;
+ RESET  :F: 0x40000000-0x400002ff : .ResetVector.text;
+END fixvector
+
+BEGIN dynamicvectors
+0x40000400: instRam : iram0 : 0x7c00 : executable, writable ;
+ WINDOW     : F : 0x40000400 - 0x40000577 : .WindowVectors.text;
+ LEVEL2_LIT : C : 0x40000578 - 0x4000057f : .Level2InterruptVector.literal;
+ LEVEL2     : F : 0x40000580 - 0x400005b7 : .Level2InterruptVector.text;
+ DEBUG_LIT  : C : 0x400005b8 - 0x400005bf : .DebugExceptionVector.literal;
+ DEBUG      : F : 0x400005c0 - 0x400005f7 : .DebugExceptionVector.text;
+ NMI_LIT    : C : 0x400005f8 - 0x400005ff : .NMIExceptionVector.literal;
+ NMI        : F : 0x40000600 - 0x40000637 : .NMIExceptionVector.text;
+ KERNEL_LIT : C : 0x40000638 - 0x4000063f : .KernelExceptionVector.literal;
+ KERNEL     : F : 0x40000640 - 0x40000677 : .KernelExceptionVector.text;
+ USER_LIT   : C : 0x40000678 - 0x4000067f : .UserExceptionVector.literal;
+ USER       : F : 0x40000680 - 0x400006b7 : .UserExceptionVector.text;
+ DOUBLE_LIT : C : 0x400006b8 - 0x400006ff : .DoubleExceptionVector.literal;
+ DOUBLE     : F : 0x40000700 - 0x4000073f : .DoubleExceptionVector.text;
+ IRAM0_LIT  : C : 0x40000740 - 0x400007ff : .iram0.literal;
+ IRAM0      : F : 0x40000800 - 0x40007fff : .iram0.text;
+END dynamicvectors
+
+BEGIN iobypass
+0x12100000: io : iobypass : 0x4000 : device, executable, writable ;
+END iobypass
